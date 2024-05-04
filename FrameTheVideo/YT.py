@@ -34,14 +34,14 @@ def download_video(url):
 
 def download_youtube_video(video_id):
     video_url = f"https://www.youtube.com/watch?v={video_id}"
-    print("Downloading YouTube video ...")
+    
     path = download_video(video_url)
-    print(f"Download complete of {path}.")
+    
     return path
 
 def get_images(video_path, output_folder, frame_skip, title):
     frame_skip = int(frame_skip)
-    print(f"Extracting frames from video: {video_path}")
+    
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise Exception("Could not open video file.")
@@ -63,7 +63,7 @@ def get_images(video_path, output_folder, frame_skip, title):
             images.append(file_name)
             cv2.imwrite(file_name, frame)
         i += 1
-        print(f"Extracted frame {i}")
+        
 
     cap.release()
     os.remove(video_path)  # Consider whether you want to keep this
@@ -77,7 +77,7 @@ def compare_images(image1, image2, similarity_threshold):
 
 def remove_similar_images(images, similarity_threshold):
 
-    print("Removing similar images...")
+    
     hashes = {}
     removed = 0
 
@@ -93,39 +93,61 @@ def remove_similar_images(images, similarity_threshold):
         else:
             hashes[img_hash] = img_path
 
-    print(f"Removed {removed} similar images.")
+    
 
 
 def zip_images(title, images):
 
     image_folder = os.path.dirname(images[0])
-    print(f"Zipping images to {image_folder}")
+    
     zip_file_path = (f"{title}_frames.zip")
+    current_folder = os.path.dirname(__file__)
+    current_folder = os.path.join(current_folder, 'web')
+    zip_folder = 'output_folder'
+    zip_file_path = os.path.join(current_folder,zip_folder, zip_file_path)
+    
     with zipfile.ZipFile(zip_file_path, 'w') as zipf:
         for image in os.listdir(image_folder):
             zipf.write(os.path.join(image_folder, image), image)
-    print("Images zipped successfully.")
-    for i in images:
-        os.remove(i)
-    os.rmdir(image_folder)
+    
     return zip_file_path
 
 def remove_excess_images(images, max_frames):
     # Ensure that we only attempt to remove images if there are more than max_frames
+    counter = 0
     while len(images) > max_frames:
         # Randomly select an index to remove
         index_to_remove = choice(range(len(images)))
         # Remove the image at the randomly selected index
         images.pop(index_to_remove)
+        counter += 1
+    
             
 def download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames):
-    print(f"Processing video: {video_id}")
-    video_path = download_youtube_video(video_id)
+    
     title = yt_to_title(video_id)
+    #check if it is already downloaded
+    if os.path.exists(os.path.join(output_folder, f"{title}_frames.zip")):
+        
+        return os.path.join(output_folder, f"{title}_frames.zip")
+    
+    video_path = download_youtube_video(video_id)
     images = get_images(video_path, output_folder, frame_skip, title)
     remove_similar_images(images, similarity_percentage)
     remove_excess_images(images, max_frames)
     zip_file_path = zip_images(title, images)
     zip_file_path = os.path.abspath(zip_file_path)
-    print(f"Processing complete. Zip file available at {zip_file_path}")
+    
+    delete_folder_and_files(images)
     return zip_file_path
+
+
+def delete_folder_and_files(images):
+    dir_path = os.path.dirname(images[0])
+    # Delete all files in the directory 
+    for file in os.listdir(dir_path):
+        os.remove(os.path.join(dir_path, file))
+    # Delete the directory
+    os.rmdir(dir_path)
+    
+    

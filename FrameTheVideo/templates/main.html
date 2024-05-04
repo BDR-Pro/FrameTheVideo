@@ -87,7 +87,19 @@
         
         let statusInterval;
         getMessages();
-        setInterval(getMessages, 4000);
+        let counter = 0;
+        const interval = setInterval(() => {
+            if (counter >= 10) {
+                const messageBox = document.getElementById('messageBox');
+                messageBox.visible = false;
+                clearInterval(interval); // Clear the interval if counter reaches 10
+            } else {
+                getMessages();
+                counter++; // Increment the counter
+            }
+        }, 4000);
+                
+
         function get_video_id(url) {
             const videoID = url.split('v=')[1];
             if (!videoID) return null;
@@ -131,7 +143,6 @@
         }
         
         function get_zip(videoID) {
-            console.log("get_zip called with videoID: " + videoID);
             const url = `/watch/?v=${videoID}`;
             const loadingBar = document.getElementById('loadingBar');
             let width = 0;
@@ -145,17 +156,32 @@
                     loadingBar.setAttribute('aria-valuenow', width);
                 }
             }, 1000);
-
+        
             fetch(url)
             .then(response => {
                 if (!response.ok) throw new Error('Response not OK');
-                return response.blob();
+                
+                // Extract filename from Content-Disposition header
+                const contentDisposition = response.headers.get('Content-Disposition');
+                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+?)"/);
+                const filename = filenameMatch ? filenameMatch[1] : 'wallpapers.zip'; // Default filename if not found
+        
+                return response.blob().then(blob => {
+                    clearInterval(interval);
+                    document.getElementById('loadingBar').parentNode.style.visibility = 'hidden';
+                    
+                    // Handle the zip file download here...
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = filename; // Set filename dynamically
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                });
             })
-            .then(blob => {
-                clearInterval(interval);
-                document.getElementById('loadingBar').parentNode.style.visibility = 'hidden';
-                // Handle the zip file download here...
-            })
+            
             .catch(error => {
                 console.error('Error:', error);
                 clearInterval(interval);
@@ -164,14 +190,7 @@
             });
         }
 
-        function startStatusUpdates() {
-            clearInterval(statusInterval);
-            statusInterval = setInterval(get_status, 4000);
-        }
 
-        function stopStatusUpdates() {
-            clearInterval(statusInterval);
-        }
 
         function scrollToBottom() {
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
@@ -180,8 +199,8 @@
             fetch('/messages') 
                 .then(response => response.json())
                 .then(data => {
-                    console.log("getMessages called");
-                    console.log(data);
+                    
+                    
                     const messageBox = document.getElementById('messageBox');
                     if (messageBox) {
                         messageBox.textContent = data.message;

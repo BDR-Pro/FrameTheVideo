@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse
-from django.core.files import File
+
 import os
 from random import choice
 from YT import download_one_video , yt_to_title
+
 
 def main(request):
     return render(request, 'main.html')
@@ -12,26 +13,36 @@ def frame_the_video(request):
     video_id = request.GET.get('v')
     if video_id:
         try:
+            
             output_folder = 'output_folder'
+            output_folder = os.path.join(os.path.dirname(__file__), output_folder)
+            os.makedirs(output_folder, exist_ok=True)
+            
             frame_skip = 50
-            similarity_percentage = 80
+            similarity_percentage = 65
             max_frames = 100
             
             zip_file_path = download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
             
             if zip_file_path and os.path.exists(zip_file_path):
-                print(f"Video ID {video_id} processed successfully.")
-                print(f"Returning zip file: {zip_file_path}")
+                
+                
                 
                 zip_file = open(zip_file_path, 'rb')
                 response = FileResponse(zip_file, as_attachment=True, content_type='application/zip', filename=os.path.basename(zip_file_path))
+                response['Content-Length'] = os.path.getsize(zip_file_path)
+                response['Content-Disposition'] = f'attachment; filename="{os.path.basename(zip_file_path)}"'
+                response['Content-Type'] = 'application/zip'
+                
+                
                 return response
+            
             else:
-                print(f"Zip file does not exist: {zip_file_path}")
+                
                 return JsonResponse({'status': 'error', 'message': 'File not found'}, status=404)
             
         except Exception as e:
-            print(f"Failed to process video ID {video_id}: {e}")
+            
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     else:
         return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
@@ -64,4 +75,5 @@ def messages(request):
 ]
 
     return JsonResponse({'message': choice(messages)})
+
 
