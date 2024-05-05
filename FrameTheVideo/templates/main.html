@@ -127,7 +127,6 @@
         function startDownload() {
             const videoID = get_video_id(document.getElementById('videoURL').value);
             if (videoID) {
-                document.getElementById('loadingBar').parentNode.style.visibility = 'visible';
                 get_zip(videoID);
                 document.getElementById('downloadbtn').classList.add('d-none');
             }
