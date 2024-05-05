@@ -7,37 +7,50 @@ from skimage.metrics import structural_similarity as ssim
 import zipfile
 import imagehash
 from PIL import Image
+import logging
+
+# Configure logging
+logging.basicConfig(filename='yt.log', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 
 def yt_to_title(video_id):
-    ydl_opts = {
-        'quiet': True,
-        'extract_flat': True,
-        'skip_download': True,
-        'force_generic_extractor': True,
-        'force_title': True,
-        'force_filename': True,
-        'outtmpl': '%(title)s.%(ext)s',
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
-        return info.get('title', None)
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'extract_flat': True,
+            'skip_download': True,
+            'force_generic_extractor': True,
+            'force_title': True,
+            'force_filename': True,
+            'outtmpl': '%(title)s.%(ext)s',
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            return info.get('title', None)
+    except Exception as e:
+        logging.error(f"Failed to get title for video ID {video_id}: \n {str(e)}")
+        return None
 
 def download_video(url):
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-        'outtmpl': '%(title)s.%(ext)s',
-        'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=True)
-        return ydl.prepare_filename(info_dict)
+    try:
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+            'outtmpl': '%(title)s.%(ext)s',
+            'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=True)
+            return ydl.prepare_filename(info_dict)
+    except Exception as e:
+        logging.error(f"Failed to download video from URL {url}: \n {str(e)}")
+        return None
 
 def download_youtube_video(video_id):
     video_url = f"https://www.youtube.com/watch?v={video_id}"
     
-    path = download_video(video_url)
+    return download_video(video_url)
     
-    return path
 
 def get_images(video_path, output_folder, frame_skip, title):
     frame_skip = int(frame_skip)
