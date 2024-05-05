@@ -4,20 +4,77 @@ from django.shortcuts import redirect
 import os
 from random import choice
 from YT import download_one_video , yt_to_title
+
+
 import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-from email.message import EmailMessage
+from email.mime.text import MIMEText
+
+
 from django.conf import settings
 
+import os
+import threading
+import re
+from django.http import JsonResponse
+
+
 Password = settings.EMAIL_HOST_PASSWORD
+
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+import os
+
+def authenticate_using_service_account():
+    """Authenticate to Google API using a service account JSON key file."""
+    
+    scopes = ['https://www.googleapis.com/auth/drive']
+    json_key_file_path = os.path.join(os.path.dirname(__file__), "django-422416-eda7f29f423d.json")
+    credentials = Credentials.from_service_account_file(json_key_file_path, scopes=scopes)
+    return build('drive', 'v3', credentials=credentials)
+
+def upload_to_google_drive(file_path):
+    """Upload a file to Google Drive using a service account and return the shareable link.
+
+    Args:
+        file_path (str): The path to the file to upload.
+
+    Returns:
+        str: The shareable link to the uploaded file.
+    """
+    file_metadata = {
+        'name': os.path.basename(file_path),
+        'mimeType': 'application/octet-stream'
+    }
+    service = authenticate_using_service_account()
+    media = MediaFileUpload(file_path, mimetype='application/octet-stream', resumable=True)
+    file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+    
+    # Make the file shareable
+    service.permissions().create(
+        fileId=file['id'],
+        body={'type': 'anyone', 'role': 'reader'},
+        fields='id'
+    ).execute()
+
+    return file['webViewLink']
+
 
 def main(request):
     return render(request, 'main.html')
 
-import os
-import threading
-from django.http import JsonResponse
+
+def validate_email(email):
+    """Check if the email address is valid.
+    
+    Args:
+        email (str): The email address to validate.
+    
+    Returns:
+        bool: True if the email address is valid, False otherwise.
+    """
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
 
 def queue_in_background(video_id, output_folder, email):
     try:
@@ -28,9 +85,14 @@ def queue_in_background(video_id, output_folder, email):
 def frame_the_video(request):
     video_id = request.GET.get('v')
     if video_id:
-        email = request.POST.get('email')
+        email = request.GET.get('email').replace(" ", "")
+        print(email)
+        print(video_id)
         if not email:
             return JsonResponse({'status': 'error', 'message': 'Email address is required'}, status=400)
+        
+        if not validate_email(email):
+            return JsonResponse({'status': 'error', 'message': 'Invalid email address'}, status=400)
         
         output_folder = 'output_folder'
         output_folder = os.path.join(os.path.dirname(__file__), output_folder)
@@ -97,8 +159,6 @@ def favicon(request):
 
 
 
-
-
 def send_email(email, zip_file_path):
     """Send an email with the zip file attached.
     
@@ -113,17 +173,18 @@ def send_email(email, zip_file_path):
     msg['To'] = email
 
     # Set the body of the email
-    msg.attach(EmailMessage("Hello, \n\nThank you for using FrameTheVideo! \n\nPlease find the attached zip file containing the wallpaper images extracted from the video you requested. \n\nEnjoy! \n\nBest regards, \nBader Alotaibi (BDR-PRO) Github ", 'plain'))
+    body = MIMEText("Hello, \n\nThank you for using FrameTheVideo! \n\nPlease find the attached zip file containing the wallpaper images extracted from the video you requested. \n\nEnjoy! \n\nBest regards, \nBader Alotaibi (BDR-PRO) Github", 'plain')
+    msg.attach(body)
 
-    # Attach the zip file
-    with open(zip_file_path, 'rb') as file:
-        part = MIMEApplication(file.read(), Name=zip_file_path)
-    part['Content-Disposition'] = f'attachment; filename="{zip_file_path}"'
-    msg.attach(part)
-
+    # upload the zip file to google drive
+    link = upload_to_google_drive(zip_file_path)
+    print(f"Uploaded to Google Drive: {link}")
+    msg.attach(MIMEText(f"Download the zip file from Google Drive: {link}", 'plain'))
+    
     # Set up the SMTP server and send the email
-    with smtplib.SMTP('smtp.example.com', 587) as server:
+    with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
+        print("Logging in...")
         server.login('framethevideo@gmail.com', Password)
         server.send_message(msg)
         print("Email sent successfully!")

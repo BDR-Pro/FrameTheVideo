@@ -133,30 +133,36 @@
         }
         
         function get_zip(videoID) {
-            const url = `/watch/?v=${videoID}`;
             const email = prompt('Enter your email address to receive the wallpaper ZIP file:');
             if (!email) {
                 alert('Please enter a valid email address.');
                 return;
             }
+            // Append the email parameter to the URL
+            const url = `/watch/?v=${videoID}&email=${encodeURIComponent(email)}`;
+        
             fetch(url, {
-                method: 'POST',
+                method: 'GET', // Changed to GET
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ email: email })
-            }).then(response => response.json())
-              .then(data => {
-                if (data.status === 'error') {
-                    alert(data.message);
-                } else {
-                    alert(data.message);
+                    'Content-Type': 'application/json'
                 }
-            })
-            .catch(error => console.error('Error:', error));
+            }).then(response => response.json())
+              .then(status => {
+                  if (status.success) {
+                      alert('Your wallpaper ZIP file is being prepared. You will receive an email shortly.');
+                  } else {
+                      alert(status.message);
+                  }
+              }).catch(error => {
+                  console.error('Error:', error);
+                  alert('An error occurred while processing your request.');
+              });
         }
         
+         
+
+
+    
 
 
         function scrollToBottom() {
