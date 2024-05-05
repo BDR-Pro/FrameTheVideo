@@ -2,13 +2,14 @@ import os
 import cv2
 import uuid
 import yt_dlp
-from random import choice
+from random import sample
 from skimage.metrics import structural_similarity as ssim
 import zipfile
 import imagehash
 from PIL import Image
 import logging
-
+import threading
+from time import sleep
 # Configure logging
 logging.basicConfig(filename='yt.log', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -107,12 +108,14 @@ def remove_similar_images(images, similarity_threshold):
             hashes[img_hash] = img_path
 
     
+def count_files(folder):
+    return len([name for name in os.listdir(folder) if os.path.isfile(os.path.join(folder, name))])
 
-
-def zip_images(title, images):
+def zip_images(title, images, max_frames):
 
     image_folder = os.path.dirname(images[0])
-    
+    if count_files(image_folder) > max_frames:
+        remove_excess_images(image_folder, max_frames)
     zip_file_path = (f"{title}_frames.zip")
     current_folder = os.path.dirname(__file__)
     current_folder = os.path.join(current_folder, 'web')
@@ -125,17 +128,21 @@ def zip_images(title, images):
     
     return zip_file_path
 
-def remove_excess_images(images, max_frames):
-    # Ensure that we only attempt to remove images if there are more than max_frames
-    counter = 0
-    while len(images) > max_frames:
-        # Randomly select an index to remove
-        index_to_remove = choice(range(len(images)))
-        # Remove the image at the randomly selected index
-        images.pop(index_to_remove)
-        counter += 1
+def remove_excess_images(image_dir, max_frames):
+    files = os.listdir(image_dir)
+    if len(files) <= max_frames:
+        return files
     
-            
+    excess_files = len(files) - max_frames
+    files_to_remove = sample(files, excess_files)
+    
+    for file in files_to_remove:
+        file_path = os.path.join(image_dir, file)
+        os.remove(file_path)
+    
+    remaining_files = [file for file in files if file not in files_to_remove]
+    return remaining_files
+
 def download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames):
     
     title = yt_to_title(video_id)
@@ -147,11 +154,15 @@ def download_one_video(video_id, output_folder, frame_skip, similarity_percentag
     video_path = download_youtube_video(video_id)
     images = get_images(video_path, output_folder, frame_skip, title)
     remove_similar_images(images, similarity_percentage)
-    remove_excess_images(images, max_frames)
-    zip_file_path = zip_images(title, images)
+
+    zip_file_path = zip_images(title,images, max_frames)
     zip_file_path = os.path.abspath(zip_file_path)
     
     delete_folder_and_files(images)
+    
+    thread_to_delete_zip = threading.Thread(target=delete_folder_and_files, args=(zip_file_path))
+    thread_to_delete_zip.start()
+    
     return zip_file_path
 
 
@@ -164,3 +175,6 @@ def delete_folder_and_files(images):
     os.rmdir(dir_path)
     
     
+def delete_folder_and_files(zip_file_path):
+    sleep(60*60*3) # 3 hours
+    os.remove(zip_file_path)
