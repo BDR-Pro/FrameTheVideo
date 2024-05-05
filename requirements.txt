@@ -1,0 +1,7 @@
+django
+schedule
+opencv-python
+yt-dlp
+scikit-image
+ImageHash
+pillow
