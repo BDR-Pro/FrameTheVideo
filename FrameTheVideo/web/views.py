@@ -32,11 +32,14 @@ import os
 
 def authenticate_using_service_account():
     """Authenticate to Google API using a service account JSON key file."""
-    
-    scopes = ['https://www.googleapis.com/auth/drive']
-    json_key_file_path = os.path.join(os.path.dirname(__file__), "django-422416-eda7f29f423d.json")
-    credentials = Credentials.from_service_account_file(json_key_file_path, scopes=scopes)
-    return build('drive', 'v3', credentials=credentials)
+    try:
+        scopes = ['https://www.googleapis.com/auth/drive']
+        json_key_file_path = os.path.join(os.path.dirname(__file__), "django-422416-eda7f29f423d.json")
+        credentials = Credentials.from_service_account_file(json_key_file_path, scopes=scopes)
+        return build('drive', 'v3', credentials=credentials)
+    except Exception as e:
+        logging.error(f"Failed to authenticate using service account: {e}")
+        return None
 
 def upload_to_google_drive(file_path):
     """Upload a file to Google Drive using a service account and return the shareable link.
@@ -173,6 +176,14 @@ def favicon(request):
     return redirect('https://filmfluency.fra1.cdn.digitaloceanspaces.com/static/other_project/favicon.ico')
 
 
+def store_in_text(email, zip_file_path):
+    if not os.path.exists('email.txt'):
+        with open('email.txt', 'w') as f:
+            f.write("Emails and Zip file paths\n\n")
+    with open('email.txt', 'a') as f:
+        f.write(f"Email: {email} \n")
+        f.write(f"Zip file path: {zip_file_path} \n\n")
+        
 
 
 def send_email(email, zip_file_path):
@@ -184,6 +195,8 @@ def send_email(email, zip_file_path):
     """
     try:
         # Create the email object
+        logging.info(f"Sending email to {email} with zip file {zip_file_path}")
+        store_in_text(email, zip_file_path)
         msg = MIMEMultipart()
         msg['Subject'] = 'Your Requested Wallpaper (FrameTheVideo)'
         msg['From'] = 'framethevideo@gmail.com'
