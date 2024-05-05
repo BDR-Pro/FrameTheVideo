@@ -17,14 +17,6 @@
         .container {
             padding-top: 50px;
         }
-        .progress {
-            height: 20px;
-            visibility: hidden;
-        }
-        .progress-bar {
-            transition: width 0.6s ease;
-            background-color: #007bff;
-        }
         #messageBox, #status_box {
             position: fixed;
             bottom: 20px;
@@ -78,9 +70,7 @@
             <button class="btn btn-secondary mt-3 d-none" id="downloadbtn" onclick="startDownload()">Download Wallpaper ZIP</button>
        
         </div>
-        <div class="progress mt-4">
-            <div id="loadingBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-        </div>
+        
         <div id="messageBox">Loading messages...</div>
     </div>
 
@@ -145,53 +135,28 @@
         
         function get_zip(videoID) {
             const url = `/watch/?v=${videoID}`;
-            const loadingBar = document.getElementById('loadingBar');
-            let width = 0;
-            const interval = setInterval(() => {
-                if (width >= 100) {
-                    clearInterval(interval);
-                    document.getElementById('loadingBar').parentNode.style.visibility = 'hidden';
+            const email = prompt('Enter your email address to receive the wallpaper ZIP file:');
+            if (!email) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: email })
+            }).then(response => response.json())
+              .then(data => {
+                if (data.status === 'error') {
+                    alert(data.message);
                 } else {
-                    width += 0.4;
-                    loadingBar.style.width = width + '%';
-                    loadingBar.setAttribute('aria-valuenow', width);
+                    alert(data.message);
                 }
-            }, 1000);
-        
-            fetch(url)
-            .then(response => {
-                if (!response.ok) throw new Error(response);
-                
-                // Extract filename from Content-Disposition header
-                const contentDisposition = response.headers.get('Content-Disposition');
-                const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+?)"/);
-                const filename = filenameMatch ? filenameMatch[1] : 'wallpapers.zip'; // Default filename if not found
-        
-                return response.blob().then(blob => {
-                    clearInterval(interval);
-                    document.getElementById('loadingBar').parentNode.style.visibility = 'hidden';
-                    
-                    // Handle the zip file download here...
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = filename; // Set filename dynamically
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                });
             })
-            
-            .catch(error => {
-                console.error('Error:', error);
-                clearInterval(interval);
-                document.getElementById('loadingBar').parentNode.style.visibility = 'hidden';
-                document.getElementById('loadingBar').classList.add('bg-danger');
-                
-            });
+            .catch(error => console.error('Error:', error));
         }
-
+        
 
 
         function scrollToBottom() {

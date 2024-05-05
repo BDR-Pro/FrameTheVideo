@@ -13,3 +13,5 @@ schedule.every().day.at("12:00").do(remove_output_folder)
 # Keep the schedule running
 while True:
     schedule.run_pending()
+    
+    

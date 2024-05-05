@@ -28,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+EMAIL_HOST_PASSWORD = input("Enter your email password: ")
 
 # Application definition
 
