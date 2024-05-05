@@ -140,7 +140,6 @@
                 document.getElementById('loadingBar').parentNode.style.visibility = 'visible';
                 get_zip(videoID);
                 document.getElementById('downloadbtn').classList.add('d-none');
-                startStatusUpdates();
             }
         }
         
@@ -161,7 +160,7 @@
         
             fetch(url)
             .then(response => {
-                if (!response.ok) throw new Error('Response not OK');
+                if (!response.ok) throw new Error(response);
                 
                 // Extract filename from Content-Disposition header
                 const contentDisposition = response.headers.get('Content-Disposition');
