@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import JsonResponse, FileResponse
-
+from django.shortcuts import redirect
 import os
 from random import choice
 from YT import download_one_video , yt_to_title
@@ -77,3 +77,8 @@ def messages(request):
     return JsonResponse({'message': choice(messages)})
 
 
+
+
+
+def favicon(request):
+    return redirect('https://filmfluency.fra1.cdn.digitaloceanspaces.com/static/other_project/favicon.ico')
