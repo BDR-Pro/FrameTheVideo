@@ -47,22 +47,26 @@ def upload_to_google_drive(file_path):
     Returns:
         str: The shareable link to the uploaded file.
     """
-    file_metadata = {
-        'name': os.path.basename(file_path),
-        'mimeType': 'application/octet-stream'
-    }
-    service = authenticate_using_service_account()
-    media = MediaFileUpload(file_path, mimetype='application/octet-stream', resumable=True)
-    file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-    
-    # Make the file shareable
-    service.permissions().create(
-        fileId=file['id'],
-        body={'type': 'anyone', 'role': 'reader'},
-        fields='id'
-    ).execute()
+    try:
+        file_metadata = {
+            'name': os.path.basename(file_path),
+            'mimeType': 'application/octet-stream'
+        }
+        service = authenticate_using_service_account()
+        media = MediaFileUpload(file_path, mimetype='application/octet-stream', resumable=True)
+        file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+        
+        # Make the file shareable
+        service.permissions().create(
+            fileId=file['id'],
+            body={'type': 'anyone', 'role': 'reader'},
+            fields='id'
+        ).execute()
 
-    return file['webViewLink']
+        return file['webViewLink']
+    except Exception as e:
+        logging.error(f"Failed to upload file to Google Drive: {e}")
+        return None
 
 
 def main(request):
@@ -84,57 +88,65 @@ def queue_in_background(video_id, output_folder, email):
     try:
         queue(video_id, output_folder, email)  
     except Exception as e:
-        print(f"Error processing video {video_id}: {e}")
+        print(f"Error processing video (q in back) {video_id}: {e}")
 
 def frame_the_video(request):
-    video_id = request.GET.get('v')
-    if video_id:
-        email = request.GET.get('email').replace(" ", "")
-        print(email)
-        print(video_id)
-        if not email:
-            return JsonResponse({'status': 'error', 'message': 'Email address is required'}, status=400)
-        
-        if not validate_email(email):
-            return JsonResponse({'status': 'error', 'message': 'Invalid email address'}, status=400)
-        
-        output_folder = 'output_folder'
-        output_folder = os.path.join(os.path.dirname(__file__), output_folder)
-        os.makedirs(output_folder, exist_ok=True)
-        output_folder = os.path.abspath(output_folder)
-        
-        # Start the queue operation in a background thread
-        thread = threading.Thread(target=queue_in_background, args=(video_id, output_folder, email))
-        thread.start()
+    try:
+        video_id = request.GET.get('v')
+        if video_id:
+            email = request.GET.get('email').replace(" ", "")
+            print(email)
+            print(video_id)
+            if not email:
+                return JsonResponse({'status': 'error', 'message': 'Email address is required'}, status=400)
+            
+            if not validate_email(email):
+                return JsonResponse({'status': 'error', 'message': 'Invalid email address'}, status=400)
+            
+            output_folder = 'output_folder'
+            output_folder = os.path.join(os.path.dirname(__file__), output_folder)
+            os.makedirs(output_folder, exist_ok=True)
+            output_folder = os.path.abspath(output_folder)
+            
+            # Start the queue operation in a background thread
+            thread = threading.Thread(target=queue_in_background, args=(video_id, output_folder, email))
+            thread.start()
 
-        return JsonResponse({'status': 'success', 
-                             'message': 'Video is being processed. Please wait a few minutes you can close this tab and check your email inbox later.'},
-                            status=200)
-    else:
-        return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
+            return JsonResponse({'status': 'success', 
+                                'message': 'Video is being processed. Please wait a few minutes you can close this tab and check your email inbox later.'},
+                                status=200)
+        else:
+            return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
+    except Exception as e:
+        logging.error(f"Failed to process video: {e}")
 
 
 def return_title(request):
-    video_id = request.GET.get('v')
-    if video_id:
-        title = yt_to_title(video_id)
-        if title:
-            return JsonResponse({'title': title})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Failed to get title'}, status=500)
-    return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
+    try:
+        video_id = request.GET.get('v')
+        if video_id:
+            title = yt_to_title(video_id)
+            if title:
+                return JsonResponse({'title': title})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Failed to get title'}, status=500)
+        return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
+    except Exception as e:
+        logging.error(f"Failed to get video title: {e}")
 
 def queue(video_id, output_folder,email):
     """download and process the video in the background and send email when done"""
-
-    frame_skip = 50
-    similarity_percentage = 65
-    max_frames = 100
-    
-    zip_file_path = download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
-    
-            
-    return send_email(email, zip_file_path)
+    try:
+        frame_skip = 50
+        similarity_percentage = 65
+        max_frames = 100
+        
+        zip_file_path = download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
+        
+                
+        return send_email(email, zip_file_path)
+    except Exception as e:
+        logging.error(f"Failed to process video (q): {e}")
 
 def messages(request):
     messages = [
@@ -194,4 +206,4 @@ def send_email(email, zip_file_path):
             server.send_message(msg)
             print("Email sent successfully!")
     except Exception as e:
-        loggin.error(f"Failed to send email to \n {email}: {e}")
+        logging.error(f"Failed to send email to \n {email}: {e}")
