@@ -179,7 +179,7 @@ def send_email(email, zip_file_path):
     # upload the zip file to google drive
     link = upload_to_google_drive(zip_file_path)
     print(f"Uploaded to Google Drive: {link}")
-    msg.attach(MIMEText(f"Download the zip file from Google Drive: {link}", 'plain'))
+    msg.attach(MIMEText(f"\n Download the zip file from Google Drive: {link}", 'plain'))
     
     # Set up the SMTP server and send the email
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
