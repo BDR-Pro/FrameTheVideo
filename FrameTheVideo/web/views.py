@@ -4,6 +4,10 @@ from django.shortcuts import redirect
 import os
 from random import choice
 from YT import download_one_video , yt_to_title
+import logging
+import os
+
+logging.basicConfig(filename='email.log', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 import smtplib
@@ -166,25 +170,28 @@ def send_email(email, zip_file_path):
         email (str): The recipient's email address.
         zip_file_path (str): The path to the zip file to be attached.
     """
-    # Create the email object
-    msg = MIMEMultipart()
-    msg['Subject'] = 'Your Requested Wallpaper (FrameTheVideo)'
-    msg['From'] = 'framethevideo@gmail.com'
-    msg['To'] = email
+    try:
+        # Create the email object
+        msg = MIMEMultipart()
+        msg['Subject'] = 'Your Requested Wallpaper (FrameTheVideo)'
+        msg['From'] = 'framethevideo@gmail.com'
+        msg['To'] = email
 
-    # Set the body of the email
-    body = MIMEText("Hello, \n\nThank you for using FrameTheVideo! \n\nPlease find the attached zip file containing the wallpaper images extracted from the video you requested. \n\nEnjoy! \n\nBest regards, \nBader Alotaibi (BDR-PRO) Github", 'plain')
-    msg.attach(body)
+        # Set the body of the email
+        body = MIMEText("Hello, \n\nThank you for using FrameTheVideo! \n\nPlease find the attached zip file containing the wallpaper images extracted from the video you requested. \n\nEnjoy! \n\nBest regards, \nBader Alotaibi (BDR-PRO) Github", 'plain')
+        msg.attach(body)
 
-    # upload the zip file to google drive
-    link = upload_to_google_drive(zip_file_path)
-    print(f"Uploaded to Google Drive: {link}")
-    msg.attach(MIMEText(f"\n Download the zip file from Google Drive: {link}", 'plain'))
-    
-    # Set up the SMTP server and send the email
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        print("Logging in...")
-        server.login('framethevideo@gmail.com', Password)
-        server.send_message(msg)
-        print("Email sent successfully!")
+        # upload the zip file to google drive
+        link = upload_to_google_drive(zip_file_path)
+        print(f"Uploaded to Google Drive: {link}")
+        msg.attach(MIMEText(f"\n Download the zip file from Google Drive: {link}", 'plain'))
+        
+        # Set up the SMTP server and send the email
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            print("Logging in...")
+            server.login('framethevideo@gmail.com', Password)
+            server.send_message(msg)
+            print("Email sent successfully!")
+    except Exception as e:
+        loggin.error(f"Failed to send email to \n {email}: {e}")
