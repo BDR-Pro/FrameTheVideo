@@ -28,6 +28,7 @@ def yt_to_title(video_id):
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+            logging.info(f"Title for video ID {video_id}: {info.get('title', None)}")
             return info.get('title', None)
     except Exception as e:
         logging.error(f"Failed to get title for video ID {video_id}: \n {str(e)}")
@@ -80,7 +81,8 @@ def get_images(video_path, output_folder, frame_skip, title):
         
 
     cap.release()
-    os.remove(video_path)  # Consider whether you want to keep this
+    os.remove(video_path)  
+    logging.info(f"Downloaded {len(images)} frames from video {video_path}")
     return images
 
 def compare_images(image1, image2, similarity_threshold):
@@ -106,7 +108,7 @@ def remove_similar_images(images, similarity_threshold):
                 removed += 1
         else:
             hashes[img_hash] = img_path
-
+    logging.info(f"Removed {removed} similar images from {len(images)} images")
     
 def count_files(folder):
     return len([name for name in os.listdir(folder) if os.path.isfile(os.path.join(folder, name))])
@@ -129,6 +131,7 @@ def zip_images(title, images, max_frames):
     return zip_file_path
 
 def remove_excess_images(image_dir, max_frames):
+    logging.info(f"Removing excess images from {image_dir}")
     files = os.listdir(image_dir)
     if len(files) <= max_frames:
         return files
@@ -141,6 +144,7 @@ def remove_excess_images(image_dir, max_frames):
         os.remove(file_path)
     
     remaining_files = [file for file in files if file not in files_to_remove]
+    logging.info(f"Removed {len(excess_files)} images from {image_dir}")
     return remaining_files
 
 def download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames):

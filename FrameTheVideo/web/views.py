@@ -65,7 +65,7 @@ def upload_to_google_drive(file_path):
             body={'type': 'anyone', 'role': 'reader'},
             fields='id'
         ).execute()
-
+        logging.info(f"Uploaded file to Google Drive: {file['webViewLink']}")
         return file['webViewLink']
     except Exception as e:
         logging.error(f"Failed to upload file to Google Drive: {e}")
@@ -98,8 +98,7 @@ def frame_the_video(request):
         video_id = request.GET.get('v')
         if video_id:
             email = request.GET.get('email').replace(" ", "")
-            print(email)
-            print(video_id)
+            logging.info(f"Processing video {video_id} with email {email}")
             if not email:
                 return JsonResponse({'status': 'error', 'message': 'Email address is required'}, status=400)
             
@@ -143,7 +142,7 @@ def queue(video_id, output_folder,email):
         frame_skip = 50
         similarity_percentage = 65
         max_frames = 100
-        
+        logging.info(f"Processing video {video_id} with email {email}")
         zip_file_path = download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
         
                 
@@ -208,15 +207,15 @@ def send_email(email, zip_file_path):
 
         # upload the zip file to google drive
         link = upload_to_google_drive(zip_file_path)
-        print(f"Uploaded to Google Drive: {link}")
+        logging.info(f"Uploaded zip file to Google Drive: {link}")
         msg.attach(MIMEText(f"\n Download the zip file from Google Drive: {link}", 'plain'))
         
         # Set up the SMTP server and send the email
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            print("Logging in...")
+            logging.info(f"Logging in to email server")
             server.login('framethevideo@gmail.com', Password)
             server.send_message(msg)
-            print("Email sent successfully!")
+            logging.info(f"Email sent to {email}")
     except Exception as e:
         logging.error(f"Failed to send email to \n {email}: {e}")
