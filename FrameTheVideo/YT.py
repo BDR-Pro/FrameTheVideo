@@ -8,6 +8,9 @@ import zipfile
 import threading
 from time import sleep
 
+def translate_string(string):
+    return string.translate(str.maketrans('', '', '\/:*?"<>|')).replace(' ', '_').replace('.', '_').replace(',', '_').replace(';', '_').replace(':', '_').replace('!', '_').replace('?', '_').replace('(', '_').replace(')', '_').replace('[', '_').replace(']', '_').replace('{', '_').replace('}', '_').replace('-', '_').replace('+', '_').replace('=', '_').replace('&', '_').replace('%', '_').replace('#', '_').replace('@', '_').replace('$', '_').replace('^', '_').replace('*', '_').replace('~', '_').replace('`', '_').replace('\'', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('\\', '_').replace('/', '_')
+
 def yt_to_title(video_id):
     try:
         ydl_opts = {
@@ -182,7 +185,7 @@ def download_one_video(video_id, output_folder, frame_skip, similarity_percentag
         return os.path.join(output_folder, f"{title}_frames.zip")
     
     video_path = download_youtube_video(video_id)
-
+    video_id = translate_string(video_id)
     thread_to_delete_zip = threading.Thread(target=delete_folder_and_files)
     thread_to_delete_zip.start()
     
