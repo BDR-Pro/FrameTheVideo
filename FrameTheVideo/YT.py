@@ -43,6 +43,7 @@ def download_video(url):
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
+            logging.info(f"Downloaded video from URL {url} to {ydl.prepare_filename(info_dict)}")
             return ydl.prepare_filename(info_dict)
     except Exception as e:
         logging.error(f"Failed to download video from URL {url}: \n {str(e)}")
@@ -56,7 +57,10 @@ def download_youtube_video(video_id):
 
 def get_images(video_path, output_folder, frame_skip, title):
     frame_skip = int(frame_skip)
-    
+    logging.info(f"Getting images from video {video_path} with frame skip {frame_skip}")
+    logging.info(f"Output folder: {output_folder}")
+    logging.info(f"Title: {title}")
+    logging.info(f"Frames in video {video_path}: {int(cv2.VideoCapture(video_path).get(cv2.CAP_PROP_FRAME_COUNT))}")
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise Exception("Could not open video file.")
