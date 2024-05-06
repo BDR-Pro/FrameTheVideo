@@ -9,7 +9,7 @@ import threading
 from time import sleep
 
 def translate_string(string):
-    return string.translate(str.maketrans('', '', '\/:*?"<>|')).replace(' ', '_').replace('.', '_').replace(',', '_').replace(';', '_').replace(':', '_').replace('!', '_').replace('?', '_').replace('(', '_').replace(')', '_').replace('[', '_').replace(']', '_').replace('{', '_').replace('}', '_').replace('-', '_').replace('+', '_').replace('=', '_').replace('&', '_').replace('%', '_').replace('#', '_').replace('@', '_').replace('$', '_').replace('^', '_').replace('*', '_').replace('~', '_').replace('`', '_').replace('\'', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('\\', '_').replace('/', '_')
+    return string.translate(str.maketrans('', '', '\/:*?"<>|')).replace(' ', '_').replace('.', '_').replace(',', '_').replace(';', '_').replace(':', '_').replace('!', '_').replace('?', '_').replace('(', '_').replace(')', '_').replace('[', '_').replace(']', '_').replace('{', '_').replace('}', '_').replace('-', '_').replace('+', '_').replace('=', '_').replace('&', '_').replace('%', '_').replace('#', '_').replace('@', '_').replace('$', '_').replace('^', '_').replace('*', '_').replace('~', '_').replace('`', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('/', '_')
 
 def yt_to_title(video_id):
     try:
