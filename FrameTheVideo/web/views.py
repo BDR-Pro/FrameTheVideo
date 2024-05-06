@@ -206,7 +206,8 @@ def send_email(email, zip_file_path):
         # Set the body of the email
         body = MIMEText("Hello, \n\nThank you for using FrameTheVideo! \n\nPlease find the attached zip file containing the wallpaper images extracted from the video you requested. \n\nEnjoy! \n\nBest regards, \nBader Alotaibi (BDR-PRO) Github", 'plain')
         msg.attach(body)
-
+        name_of_zip = os.path.basename(zip_file_path).replace(".zip", "")
+        msg.attach(MIMEText(f"\n For the video: {name_of_zip}", 'plain'))
         # upload the zip file to google drive
         link = upload_to_google_drive(zip_file_path)
         logging.info(f"Uploaded zip file to Google Drive: {link}")
