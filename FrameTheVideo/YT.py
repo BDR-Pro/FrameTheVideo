@@ -68,21 +68,25 @@ def get_images(video_path, output_folder, frame_skip, title):
     images = []
     folder = os.path.join(output_folder, f"{title}_frames")
     os.makedirs(folder, exist_ok=True)
-
-    i = 0
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        if i % frame_skip == 0:
-            frame_index = int(i / frame_skip)
-            unique_id = str(uuid.uuid4())
-            file_name = os.path.join(folder, f"frame_{frame_index}_{unique_id[:5]}.jpg")
-            file_name = os.path.abspath(file_name)
-            images.append(file_name)
-            cv2.imwrite(file_name, frame)
-        i += 1
-        
+    
+    try:
+        i = 0
+        while True:
+            success, frame = cap.read()
+            if not success:
+                break
+            if i % frame_skip == 0:
+                frame_index = int(i / frame_skip)
+                unique_id = str(uuid.uuid4())
+                file_name = os.path.join(folder, f"frame_{frame_index}_{unique_id[:5]}.jpg")
+                file_name = os.path.abspath(file_name)
+                images.append(file_name)
+                cv2.imwrite(file_name, frame)
+            i += 1
+    except Exception as e:
+        logging.error(f"Failed to get images from video {video_path}: \n {str(e)}")
+        return None
+            
 
     cap.release()
     os.remove(video_path)  
