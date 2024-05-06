@@ -9,7 +9,7 @@ import threading
 from time import sleep
 
 def translate_string(string):
-    return string.translate(str.maketrans('', '', '\/:*?"<>|')).replace(' ', '_').replace('.', '_').replace(',', '_').replace(';', '_').replace(':', '_').replace('!', '_').replace('?', '_').replace('(', '_').replace(')', '_').replace('[', '_').replace(']', '_').replace('{', '_').replace('}', '_').replace('-', '_').replace('+', '_').replace('=', '_').replace('&', '_').replace('%', '_').replace('#', '_').replace('@', '_').replace('$', '_').replace('^', '_').replace('*', '_').replace('~', '_').replace('`', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('/', '_')
+    return string.translate(str.maketrans('', '', '/:*?"<>|')).replace(' ', '_').replace('.', '_').replace(',', '_').replace(';', '_').replace(':', '_').replace('!', '_').replace('?', '_').replace('(', '_').replace(')', '_').replace('[', '_').replace(']', '_').replace('{', '_').replace('}', '_').replace('-', '_').replace('+', '_').replace('=', '_').replace('&', '_').replace('%', '_').replace('#', '_').replace('@', '_').replace('$', '_').replace('^', '_').replace('*', '_').replace('~', '_').replace('`', '_').replace('"', '_').replace('<', '_').replace('>', '_').replace('|', '_').replace('/', '_')
 
 def yt_to_title(video_id):
     try:
@@ -132,7 +132,7 @@ def count_files(folder):
 
 def zip_images(title, video_id, max_frames):
     # Sanitize the title to remove any problematic characters
-    title = title.translate(str.maketrans('', '', '\/:*?"<>|'))
+    title = title.translate(str.maketrans('', '', '/:*?"<>|'))
 
     # Construct the path to the image folder
     image_folder = os.path.join(os.path.dirname(__file__), 'output_folder', f"{video_id}_frames")
