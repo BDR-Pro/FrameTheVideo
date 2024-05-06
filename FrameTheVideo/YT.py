@@ -36,19 +36,38 @@ def yt_to_title(video_id):
 
 def download_video(url):
     try:
+        out_dir = os.path.join(os.path.dirname(__file__), 'videos')
         ydl_opts = {
-            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
-            'outtmpl': '%(title)s.%(ext)s',
-            'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
+            'format': 'bestvideo[ext=mp4]/best[ext=mp4]',
+            'outtmpl': os.path.join(out_dir, '%(title)s.%(ext)s'),
+            #'postprocessors': [{'key': 'FFmpegVideoConvertor', 'preferedformat': 'mp4'}],
         }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
             logging.info(f"Downloaded video from URL {url} to {ydl.prepare_filename(info_dict)}")
-            return ydl.prepare_filename(info_dict)
+            return convert_to_mp4(ydl.prepare_filename(info_dict))
     except Exception as e:
         logging.error(f"Failed to download video from URL {url}: \n {str(e)}")
         return None
 
+def convert_to_mp4(video_path):
+    """using ffmpeg to convert video to mp4 format"""
+    try:
+        if not os.path.exists(video_path):
+            raise Exception(f"Video file does not exist \n {video_path}.")
+        if video_path.endswith('.mp4'):
+            logging.info(f"Video {video_path} is already in mp4 format.")
+            return video_path
+        out_dir = os.path.join(os.path.dirname(__file__), 'videos')
+        output_path = os.path.join(out_dir, f"{os.path.splitext(os.path.basename(video_path))[0]}.mp4")
+        os.system(f"ffmpeg -i {video_path} -c:v libx264 -c:a aac -strict experimental {output_path}")
+        logging.info(f"Converted video {video_path} to {output_path}")
+        os.remove(video_path)
+        return output_path
+    except Exception as e:
+        logging.error(f"Failed to convert video {video_path} to mp4: \n {str(e)}")
+        return None
+    
 def download_youtube_video(video_id):
     video_url = f"https://www.youtube.com/watch?v={video_id}"
     
@@ -61,6 +80,8 @@ def get_images(video_path, output_folder, frame_skip, title):
     logging.info(f"Output folder: {output_folder}")
     logging.info(f"Title: {title}")
     logging.info(f"Frames in video {video_path}: {int(cv2.VideoCapture(video_path).get(cv2.CAP_PROP_FRAME_COUNT))}")
+    if not os.path.exists(video_path):
+        raise Exception(f"Video file does not exist \n {video_path}.")
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise Exception("Could not open video file.")
@@ -189,3 +210,22 @@ def delete_folder_and_files(images):
 def delete_folder_and_files(zip_file_path):
     sleep(60*60*3) # 3 hours
     os.remove(zip_file_path)
+    
+    
+def long_video(video_id):
+    ydl_opts = {
+        'quiet': True,
+        'extract_flat': True,
+        'skip_download': True,
+        'force_generic_extractor': True,
+        'force_title': True,
+        'force_filename': True,
+        'outtmpl': '%(title)s.%(ext)s',
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=False)
+        duration = info.get('duration', 0)
+        if duration > 60*35:
+            logging.info(f"Video {video_id} is too long. Duration: {duration}")
+            return True
+    return False

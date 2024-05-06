@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 import os
 from random import choice
-from YT import download_one_video , yt_to_title
+from YT import download_one_video , yt_to_title, long_video
 import logging
 import os
 
@@ -105,6 +105,8 @@ def frame_the_video(request):
             if not validate_email(email):
                 return JsonResponse({'status': 'error', 'message': 'Invalid email address'}, status=400)
             
+            if long_video(video_id):
+                return JsonResponse({'status': 'error', 'message': 'Video is too long.'}, status=400)
             output_folder = 'output_folder'
             output_folder = os.path.join(os.path.dirname(__file__), output_folder)
             os.makedirs(output_folder, exist_ok=True)
