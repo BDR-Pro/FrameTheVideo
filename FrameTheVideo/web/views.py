@@ -6,6 +6,7 @@ from random import choice
 from YT import download_one_video , yt_to_title, long_video
 import logging
 import os
+from time import sleep
 
 logging.basicConfig(filename='email.log', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -39,6 +40,7 @@ def authenticate_using_service_account():
         return build('drive', 'v3', credentials=credentials)
     except Exception as e:
         logging.error(f"Failed to authenticate using service account: {e}")
+        print(f"Failed to authenticate using service account: {e}")
         return None
 
 def upload_to_google_drive(file_path):
@@ -65,10 +67,10 @@ def upload_to_google_drive(file_path):
             body={'type': 'anyone', 'role': 'reader'},
             fields='id'
         ).execute()
-        logging.info(f"Uploaded file to Google Drive: {file['webViewLink']}")
+        print(f"Uploaded file to Google Drive: {file['webViewLink']}")
         return file['webViewLink']
     except Exception as e:
-        logging.error(f"Failed to upload file to Google Drive: {e}")
+        print(f"Failed to upload file to Google Drive: {e}")
         return None
 
 
@@ -87,7 +89,7 @@ def validate_email(email):
     """
     return re.match(r"[^@]+@[^@]+\.[^@]+", email) is not None
 
-def queue_in_background(video_id, output_folder, email):
+def queue_in_background(video_id, output_folder , email):
     try:
         queue(video_id, output_folder, email)  
     except Exception as e:
@@ -98,7 +100,7 @@ def frame_the_video(request):
         video_id = request.GET.get('v')
         if video_id:
             email = request.GET.get('email').replace(" ", "")
-            logging.info(f"Processing video {video_id} with email {email}")
+            print(f"Processing video {video_id} with email {email}")
             if not email:
                 return JsonResponse({'status': 'error', 'message': 'Email address is required'}, status=400)
             
@@ -107,13 +109,11 @@ def frame_the_video(request):
             
             if long_video(video_id):
                 return JsonResponse({'status': 'error', 'message': 'Video is too long.'}, status=400)
-            output_folder = 'output_folder'
-            output_folder = os.path.join(os.path.dirname(__file__), output_folder)
-            os.makedirs(output_folder, exist_ok=True)
-            output_folder = os.path.abspath(output_folder)
             
+            output_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'output_folder', f"{video_id}_frames"))
+            os.makedirs(output_folder, exist_ok=True)
             # Start the queue operation in a background thread
-            thread = threading.Thread(target=queue_in_background, args=(video_id, output_folder, email))
+            thread = threading.Thread(target=queue_in_background, args=(video_id,output_folder,email))
             thread.start()
 
             return JsonResponse({'status': 'success', 
@@ -122,7 +122,7 @@ def frame_the_video(request):
         else:
             return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
     except Exception as e:
-        logging.error(f"Failed to process video: {e}")
+        print(f"Failed to process video: {e}")
 
 
 def return_title(request):
@@ -136,7 +136,7 @@ def return_title(request):
                 return JsonResponse({'status': 'error', 'message': 'Failed to get title'}, status=500)
         return JsonResponse({'status': 'error', 'message': 'No video ID provided'}, status=400)
     except Exception as e:
-        logging.error(f"Failed to get video title: {e}")
+        print(f"Failed to get video title: {e}")
 
 def queue(video_id, output_folder,email):
     """download and process the video in the background and send email when done"""
@@ -144,9 +144,10 @@ def queue(video_id, output_folder,email):
         frame_skip = 50
         similarity_percentage = 65
         max_frames = 100
-        logging.info(f"Processing video {video_id} with email {email}")
-        zip_file_path = download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
-        
+        print(f"Processing video {video_id} with email {email}")
+        download_one_video(video_id, output_folder, frame_skip, similarity_percentage, max_frames)
+        sleep(60*60*1)  # 1 hour
+        zip_file_path = os.path.join(output_folder, f"{(video_id)}_frames.zip")
                 
         return send_email(email, zip_file_path)
     except Exception as e:
@@ -196,7 +197,9 @@ def send_email(email, zip_file_path):
     """
     try:
         # Create the email object
+        
         logging.info(f"Sending email to {email} with zip file {zip_file_path}")
+        print(f"Sending email to {email} with zip file {zip_file_path}")
         store_in_text(email, zip_file_path)
         msg = MIMEMultipart()
         msg['Subject'] = 'Your Requested Wallpaper (FrameTheVideo)'
@@ -211,12 +214,12 @@ def send_email(email, zip_file_path):
         # upload the zip file to google drive
         link = upload_to_google_drive(zip_file_path)
         logging.info(f"Uploaded zip file to Google Drive: {link}")
+        print(f"Uploaded zip file to Google Drive: {link}")
         msg.attach(MIMEText(f"\n Download the zip file from Google Drive: {link}", 'plain'))
         
         # Set up the SMTP server and send the email
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            logging.info(f"Logging in to email server")
             server.login('framethevideo@gmail.com', Password)
             server.send_message(msg)
             logging.info(f"Email sent to {email}")

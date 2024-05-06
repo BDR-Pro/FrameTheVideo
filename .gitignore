@@ -1,5 +1,8 @@
 __pycache__/
-FrameTheVideo/web/output_folder/
 django-422416-eda7f29f423d.json
 FrameTheVideo/debug.log
 FrameTheVideo/yt.log
+FrameTheVideo/videos/
+debug.log
+email.log
+FrameTheVideo/output_folder/
