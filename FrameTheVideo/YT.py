@@ -65,7 +65,7 @@ def get_images(video_path, output_folder, frame_skip, title):
     if not cap.isOpened():
         raise Exception("Could not open video file.")
 
-    images = []
+    
     folder = os.path.join(output_folder, f"{title}_frames")
     os.makedirs(folder, exist_ok=True)
     
@@ -80,7 +80,6 @@ def get_images(video_path, output_folder, frame_skip, title):
                 unique_id = str(uuid.uuid4())
                 file_name = os.path.join(folder, f"frame_{frame_index}_{unique_id[:5]}.jpg")
                 file_name = os.path.abspath(file_name)
-                images.append(file_name)
                 cv2.imwrite(file_name, frame)
             i += 1
     except Exception as e:
@@ -90,8 +89,8 @@ def get_images(video_path, output_folder, frame_skip, title):
 
     cap.release()
     os.remove(video_path)  
-    logging.info(f"Downloaded {len(images)} frames from video {video_path}")
-    return images
+    logging.info(f"Downloaded {count_files(folder)} images from video {video_path}")
+    return [os.path.join(folder, file) for file in os.listdir(folder)]
 
 def compare_images(image1, image2, similarity_threshold):
     img1 = cv2.imread(image1, cv2.IMREAD_GRAYSCALE)
