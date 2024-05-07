@@ -4,11 +4,9 @@ from django.shortcuts import redirect
 import os
 from random import choice
 from YT import download_one_video , yt_to_title, long_video
-import logging
 import os
 from time import sleep
 
-logging.basicConfig(filename='email.log', level=logging.DEBUG, filemode='w', format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 import smtplib
@@ -123,7 +121,7 @@ def queue(video_id, output_folder,email):
                 
         return send_email(email, zip_file_path, yt_to_title(video_id))
     except Exception as e:
-        logging.error(f"Failed to process video (q): {e}")
+        print(f"Failed to process video (q): {e}")
 
 def messages(request):
     messages = [
@@ -170,7 +168,7 @@ def send_email(email, zip_file_path, title):
     try:
         # Create the email object
         
-        logging.info(f"Sending email to {email} with zip file {zip_file_path}")
+        print(f"Sending email to {email} with zip file {zip_file_path}")
         print(f"Sending email to {email} with zip file {zip_file_path}")
         store_in_text(email, zip_file_path)
         msg = MIMEMultipart()
@@ -185,7 +183,6 @@ def send_email(email, zip_file_path, title):
         msg.attach(MIMEText(f"\n\nFor the video: {title}", 'plain'))
         # upload the zip file to google drive
         link = upload_file_to_mega(zip_file_path)
-        logging.info(f"Uploaded zip file to Mega: {link}")
         print(f"Uploaded zip file to Mega: {link}")
         msg.attach(MIMEText(f"\nDownload the zip file from Google Drive: {link}", 'plain'))
         
@@ -194,6 +191,6 @@ def send_email(email, zip_file_path, title):
             server.starttls()
             server.login('framethevideo@gmail.com', Password)
             server.send_message(msg)
-            logging.info(f"Email sent to {email}")
+            print(f"Email sent to {email}")
     except Exception as e:
-        logging.error(f"Failed to send email to \n {email}: {e}")
+        print(f"Failed to send email to \n {email}: {e}")
