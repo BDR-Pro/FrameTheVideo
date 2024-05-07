@@ -27,14 +27,14 @@ from mega import Mega
 
 
 Password = settings.EMAIL_HOST_PASSWORD
-
+Mega_Password = settings.MEGA_PASSWORD
 
 def upload_file_to_mega(file_path):
     # Initialize Mega object
     mega = Mega()
 
     # Login to your Mega.nz account
-    m = mega.login('framethevideo@gmail.com', Password)
+    m = mega.login('framethevideo@gmail.com', Mega_Password)
 
     # Upload a file
     file = m.upload(file_path)

@@ -30,6 +30,8 @@ ALLOWED_HOSTS = ['*']
 
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 print(EMAIL_HOST_PASSWORD)
+MEGA_PASSWORD = os.getenv('MEGA_PASSWORD')
+print(MEGA_PASSWORD)
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
