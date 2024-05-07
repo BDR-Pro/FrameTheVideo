@@ -3,5 +3,3 @@ schedule
 opencv-python
 yt-dlp
 scikit-image
-mega.py
-tenacity==8.2.3

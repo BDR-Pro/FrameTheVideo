@@ -21,27 +21,48 @@ import threading
 import re
 from django.http import JsonResponse
 
-from mega import Mega
+import subprocess
 
 
 Password = settings.EMAIL_HOST_PASSWORD
 Mega_Password = settings.MEGA_PASSWORD
 
+
 def upload_file_to_mega(file_path):
-    # Initialize Mega object
-    mega = Mega()
+    # Load Mega password securely from environment variables
+    
+    try:
+        # Login to Mega
+        login_command = f"mega-login framethevideo.com {Mega_Password}"
+        if subprocess.run(login_command, shell=True, check=True).returncode != 0:
+            print("Login failed")
+            return None
+        
+        # Upload the file
+        upload_command = f"mega-put {file_path} /"
+        upload_result = subprocess.run(upload_command, shell=True, check=True)
+        if upload_result.returncode != 0:
+            print("Upload failed")
+            return None
 
-    # Login to your Mega.nz account
-    m = mega.login('framethevideo@gmail.com', Mega_Password)
+        # Logout from Mega
+        logout_command = "mega-logout"
+        subprocess.run(logout_command, shell=True, check=True)
+        
+        # Construct the URL assuming you know the file ID and key; this part needs MEGA's output parsing
+        file_name = os.path.basename(file_path)
+        # Placeholder for URL until the correct ID and key can be obtained
+        return f"https://mega.nz/file/{file_name}"
 
-    # Upload a file
-    file = m.upload(file_path)
-
-    # Get the public link to the uploaded file
-    public_link = m.get_upload_link(file)
-    print("File uploaded. Public link: ", public_link)
-    return public_link
-
+    except subprocess.CalledProcessError as e:
+        print(f"Command '{e.cmd}' failed with return code {e.returncode}")
+    except Exception as e:
+        print(f"Failed to upload file to Mega: {e}")
+    finally:
+        # Ensure to logout even if the upload or other commands fail
+        subprocess.run("mega-logout", shell=True)
+    
+    return None
 
 
 def main(request):
