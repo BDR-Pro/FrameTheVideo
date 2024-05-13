@@ -29,10 +29,11 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-print(EMAIL_HOST_PASSWORD)
-MEGA_PASSWORD = os.getenv('MEGA_PASSWORD')
-print(MEGA_PASSWORD)    
-
+print(EMAIL_HOST_PASSWORD)  
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+print(AWS_SECRET_ACCESS_KEY)
+print(AWS_ACCESS_KEY_ID)
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'

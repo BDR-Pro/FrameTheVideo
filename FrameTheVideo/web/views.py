@@ -1,12 +1,11 @@
 from django.shortcuts import render
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect
 import os
 from random import choice
 from YT import download_one_video , yt_to_title, long_video
 import os
 from time import sleep
-
 
 
 import smtplib
@@ -20,51 +19,72 @@ import os
 import threading
 import re
 from django.http import JsonResponse
-
-import subprocess
-
-
 Password = settings.EMAIL_HOST_PASSWORD
-Mega_Password = settings.MEGA_PASSWORD
+aws_access_key_id = settings.AWS_ACCESS_KEY_ID
+aws_secret_access_key = settings.AWS_SECRET_ACCESS_KEY
+import boto3
+from botocore.exceptions import NoCredentialsError
+import random
+import string
 
-
-def upload_file_to_mega(file_path):
-    # Load Mega password securely from environment variables
+def random_64_string():
+    """Generate a random 64-character string.
     
+    Returns:
+        str: A random 64-character string.
+    """
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=64))
+
+def upload_file_to_s3(file_path, object_name, aws_access_key_id, aws_secret_access_key):
+    """Upload a file to an S3 bucket using provided AWS credentials.
+
+    Args:
+        file_path (str): The path to the file to upload.
+        object_name (str): The name of the object in the bucket.
+        aws_access_key_id (str): AWS access key ID.
+        aws_secret_access_key (str): AWS secret access key.
+
+    Returns:
+        str: The URL of the uploaded file or None if upload fails.
+    """
     try:
-        # Login to Mega
-        login_command = f"mega-login framethevideo.com {Mega_Password}"
-        if subprocess.run(login_command, shell=True, check=True).returncode != 0:
-            print("Login failed")
-            return None
-        
-        # Upload the file
-        upload_command = f"mega-put {file_path} /"
-        upload_result = subprocess.run(upload_command, shell=True, check=True)
-        if upload_result.returncode != 0:
-            print("Upload failed")
-            return None
-
-        # Logout from Mega
-        logout_command = "mega-logout"
-        subprocess.run(logout_command, shell=True, check=True)
-        
-        # Construct the URL assuming you know the file ID and key; this part needs MEGA's output parsing
-        file_name = os.path.basename(file_path)
-        # Placeholder for URL until the correct ID and key can be obtained
-        return f"https://mega.nz/file/{file_name}"
-
-    except subprocess.CalledProcessError as e:
-        print(f"Command '{e.cmd}' failed with return code {e.returncode}")
-    except Exception as e:
-        print(f"Failed to upload file to Mega: {e}")
-    finally:
-        # Ensure to logout even if the upload or other commands fail
-        subprocess.run("mega-logout", shell=True)
+        url = "https://framethevideo.fra1.cdn.digitaloceanspaces.com"
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key
+        )
+        s3.upload_file(file_path, "framethevideo", object_name)
+        obj_url = f"{url}/{object_name}"
+        return obj_url
+    except NoCredentialsError:
+        print("No AWS credentials available")
+        return None
     
-    return None
 
+def delete_s3_object(object_name, aws_access_key_id, aws_secret_access_key):
+    """Delete an object from an S3 bucket using provided AWS credentials.
 
+    Args:
+        object_name (str): The name of the object to delete.
+        aws_access_key_id (str): AWS access key ID.
+        aws_secret_access_key (str): AWS secret access key.
+
+    Returns:
+        str: Message indicating deletion status.
+    """
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key
+        )
+        s3.delete_object(Bucket="framethevideo", Key=object_name)
+        return "Deleted"
+    except Exception as e:
+        print(f"Failed to delete S3 object {object_name}: {e}")
+        return "Deletion failed"
+    
 def main(request):
     return render(request, 'main.html')
 
@@ -203,10 +223,12 @@ def send_email(email, zip_file_path, title):
         
         msg.attach(MIMEText(f"\n\nFor the video: {title}", 'plain'))
         # upload the zip file to google drive
-        link = upload_file_to_mega(zip_file_path)
+        random=random_64_string()+".zip"
+        link = upload_file_to_s3(zip_file_path, random)
         print(f"Uploaded zip file to Mega: {link}")
-        msg.attach(MIMEText(f"\nDownload the zip file from Google Drive: {link}", 'plain'))
-        
+        remove = "framethevideo.com"+"/delete/"+random
+        msg.attach(MIMEText(f"\nDownload the zip file from Our Website: {link} \n ", 'plain'))
+        msg.attach(MIMEText(f"\To Delete the zip file from Our Website: {remove} \n ", 'plain'))
         # Set up the SMTP server and send the email
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()

@@ -3,3 +3,4 @@ schedule
 opencv-python
 yt-dlp
 scikit-image
+boto3
